@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import '../css/style.css'
-import Newsletter from "./Newsletter.js"
 import Nav from "./nav"
-import { fetchCrypto, addToFav } from './data';
+import { fetchCrypto, fetchFav, addToFav, getFav } from './data';
 import { makeStyles } from '@material-ui/core/styles';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@material-ui/core';
 import { Paper } from '@material-ui/core';
 import { ArrowUpward } from '@material-ui/icons';
 import { ArrowDownward } from '@material-ui/icons';
-import { isauthenticated } from '../auth';
+import { isauthenticated } from '../auth'
 
 const useStyles = makeStyles({
     table: {
@@ -18,7 +17,7 @@ const useStyles = makeStyles({
 
 
 
-const Home = () => {
+const Favourite = () => {
     const [cryptos, setCryptos] = useState([])
     const [reload, setReload] = useState(false)
     const [currency, setCurrency] = useState('USD')
@@ -26,31 +25,32 @@ const Home = () => {
 
     setInterval(() => { setReload(!reload) }, 10000);
 
-    const fetch = () => {
-        fetchCrypto(currency)
-            .then(data => { setCryptos(data) })
-            .catch(err => console.log(err))
-    }
+    function fetch() {
 
-    useEffect(() => { fetch() }, [reload], [currency])
-    // console.log(cryptos);
 
-    function handleChangecurrency(event) {
-        setCurrency(event.target.value);
-    }
-    function addtofav(currency) {
-        const curr = {
-            curr: currency
-        }
+
         const token = isauthenticated().token
         const userId = isauthenticated().user._id
-        addToFav(curr, userId, token)
+        getFav(userId, token)
             .then(result => {
-                console.log(result)
+                fetchFav(result.fav, currency)
+                    .then(data => {
+                        setCryptos(data)
+                    })
+                    .catch(err => {
+                        console.log(err)
+                    })
             })
             .catch(err => {
                 console.log(err)
             })
+    }
+
+    useEffect(() => { fetch() }, [currency, reload])
+    // console.log(cryptos);
+
+    function handleChangecurrency(event) {
+        setCurrency(event.target.value);
     }
     function handleTimeChange(event) {
         event.preventDefault();
@@ -123,7 +123,6 @@ const Home = () => {
                                     <TableCell align="left"><span className="headTitle">PRICE&nbsp;  ({currency})</span></TableCell>
                                     <TableCell align="left"><span className="headTitle">MARKET CAP&nbsp;  ({currency})</span></TableCell>
                                     <TableCell align="left"><span className="headTitle">CHANGE&nbsp;({time})</span></TableCell>
-                                    <TableCell align="left"><span className="headTitle">FAVOURITE</span></TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
@@ -141,12 +140,6 @@ const Home = () => {
                                             </TableCell>
                                             <TableCell align="left"> <span className="cryptoData">{time === '1d' ? <>{parseFloat(row["1d"].price_change_pct) > 0 ? <><span className="increase"><ArrowUpward />&nbsp;{row["1d"].price_change_pct}</span></> : <><span className="decrease"><ArrowDownward />&nbsp;{row["1d"].price_change_pct}</span></>}</> : <>{parseFloat(row["30d"].price_change_pct) > 0 ? <><span className="increase"><ArrowUpward />&nbsp;{row["30d"].price_change_pct}</span></> : <><span className="decrease"><ArrowDownward />&nbsp;{row["30d"].price_change_pct}</span></>}</>} %</span>
                                             </TableCell>
-                                            {isauthenticated() === false ? <TableCell component="th" scope="row">
-                                                <button onClick={() => alert('Log in to use this feature')} >Add</button>
-
-                                            </TableCell> : <TableCell component="th" scope="row">
-                                                <button onClick={() => (addtofav(row.currency))} >Add</button>
-                                            </TableCell>}
                                         </TableRow>
 
                                     ))}
@@ -160,10 +153,11 @@ const Home = () => {
 
             </div>
 
-            <Newsletter />
+
+
 
 
         </>
     );
 };
-export default (Home);
+export default (Favourite);
